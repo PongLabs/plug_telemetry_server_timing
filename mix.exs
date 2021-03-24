@@ -3,6 +3,7 @@ defmodule PlugServerTiming.MixProject do
 
   def project do
     ver = version()
+
     [
       app: :plug_telemetry_server_timing,
       version: ver,
@@ -41,8 +42,7 @@ defmodule PlugServerTiming.MixProject do
 
   defp version do
     with :error <- hex_version(),
-         :error <- git_version()
-    do
+         :error <- git_version() do
       "0.0.0-dev"
     else
       {:ok, ver} -> ver

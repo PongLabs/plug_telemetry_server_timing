@@ -69,11 +69,26 @@ defmodule Plug.Telemetry.ServerTiming do
   """
   @spec install(events) :: :ok when events: map() | [{:telemetry.event_name(), atom()}]
   def install(events) do
-    for {name, metric} <- events do
-      :ok = :telemetry.attach({__MODULE__, name, metric}, name, &__MODULE__.__handle__/4, metric)
-    end
-
+    Enum.each(events, &attach_event(&1))
     :ok
+  end
+
+  defp attach_event({metric_name, metric, handler}) when is_function(handler, 4) do
+    :ok = :telemetry.attach({__MODULE__, metric_name, metric}, metric_name, handler, metric)
+  end
+
+  defp attach_event({metric_name, metric, _handler}) do
+    attach_event({metric_name, metric})
+  end
+
+  defp attach_event({metric_name, metric}) do
+    :ok =
+      :telemetry.attach(
+        {__MODULE__, metric_name, metric},
+        metric_name,
+        &__MODULE__.__handle__/4,
+        metric
+      )
   end
 
   @doc false
