@@ -61,12 +61,13 @@ defmodule Plug.Telemetry.ServerTiming do
         {metric_name, metric, opts} = normalise(event) do
       name = Map.get_lazy(opts, :name, fn -> "#{Enum.join(metric_name, ".")}.#{metric}" end)
       description = Map.get(opts, :description, "")
+      handle = get_handle(opts)
 
       :ok =
         :telemetry.attach(
           {__MODULE__, name},
           metric_name,
-          &__MODULE__.__handle__/4,
+          handle,
           {metric, %{name: name, desc: description}}
         )
     end
@@ -77,6 +78,9 @@ defmodule Plug.Telemetry.ServerTiming do
   defp normalise({name, metric}), do: {name, metric, %{}}
   defp normalise({name, metric, opts}) when is_map(opts), do: {name, metric, opts}
   defp normalise({name, metric, opts}) when is_list(opts), do: {name, metric, Map.new(opts)}
+
+  defp get_handle(%{handle: function}) when is_function(function, 4), do: function
+  defp get_handle(_), do: &__MODULE__.__handle__/4
 
   @doc false
   def __handle__(_metric_name, measurements, _metadata, {metric, opts}) do
@@ -110,6 +114,7 @@ defmodule Plug.Telemetry.ServerTiming do
 
   defp encode({measurement, timestamp, opts}, start) do
     %{desc: desc, name: name} = opts
+
     data = [
       {"dur", System.convert_time_unit(measurement, :native, :millisecond)},
       {"total", System.convert_time_unit(timestamp - start, :native, :millisecond)},
